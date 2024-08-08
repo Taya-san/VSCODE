@@ -6,23 +6,30 @@ Question: What are the top-paying data analyst jobs?
 */
 WITH tpj AS (
     SELECT
-        job_id,
+        jpf.job_id,
         job_title,
         job_location,
         job_schedule_type,
         salary_year_avg,
+        sjd.skill_id,
         cd.name AS company_name,
         job_posted_date
     FROM
-        job_postings_fact jpf
+        (
+        SELECT *
+        FROM job_postings_fact
+        WHERE job_location = 'Anywhere'
+            AND job_title_short = 'Data Analyst'
+            AND salary_year_avg IS NOT NULL
+        ORDER BY salary_year_avg DESC
+        LIMIT 10
+        ) jpf
     LEFT JOIN company_dim cd ON
         cd.company_id = jpf.company_id
-    WHERE job_location = 'Anywhere'
-        AND job_title_short = 'Data Analyst'
-        AND salary_year_avg IS NOT NULL
-    ORDER BY salary_year_avg DESC
-    LIMIT 10
+    LEFT JOIN skills_job_dim sjd
+        ON sjd.job_id = jpf.job_id
 )
+
 SELECT
     job_id,
     job_title,
@@ -32,20 +39,7 @@ SELECT
     salary_year_avg,
     company_name,
     job_posted_date
-FROM (
-    SELECT
-        tpj.job_id,
-        job_title,
-        job_location,
-        job_schedule_type,
-        skill_id,
-        salary_year_avg,
-        company_name,
-        job_posted_date
-    FROM tpj
-    JOIN skills_job_dim sjd
-        ON sjd.job_id = tpj.job_id
-) AS tpjs
+FROM tpj
 LEFT JOIN skills_dim sd
-    ON sd.skill_id = tpjs.skill_id
+    ON sd.skill_id = tpj.skill_id
 ;
